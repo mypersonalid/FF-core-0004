@@ -1,0 +1,943 @@
+
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#020704">
+<title>Toxic Serpent X</title>
+
+<style>
+:root {
+  --toxic: #8cff00;
+  --green: #39ff14;
+  --bg: #020704;
+  --panel: rgba(5, 19, 9, .88);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: #d7ffcf;
+  font-family: Arial, sans-serif;
+  touch-action: none;
+}
+
+#world {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 45%, #10210c 0%, #050c07 48%, #010302 100%);
+}
+
+canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+#vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse, transparent 35%, #000a 100%);
+}
+
+header {
+  position: absolute;
+  z-index: 2;
+  top: max(15px, env(safe-area-inset-top));
+  left: 15px;
+  right: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.brand {
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--toxic);
+  text-shadow: 0 0 14px #55ff00a8;
+}
+
+.subtitle {
+  margin-top: 5px;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: #729b68;
+}
+
+.status {
+  border: 1px solid #315529;
+  background: #061108d9;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--green);
+  border-radius: 50%;
+  margin-right: 6px;
+  box-shadow: 0 0 9px var(--green);
+}
+
+#hud {
+  position: absolute;
+  z-index: 3;
+  left: 14px;
+  right: 14px;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  max-width: 560px;
+  margin: auto;
+  border: 1px solid #294b22;
+  border-radius: 14px;
+  padding: 13px;
+  background: var(--panel);
+  box-shadow: 0 0 25px #35ff0c0a, inset 0 0 20px #39ff1407;
+  backdrop-filter: blur(12px);
+}
+
+.hud-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.label {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: #8baa82;
+}
+
+.value {
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--toxic);
+}
+
+.meter {
+  width: 100%;
+  height: 4px;
+  background: #203020;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 7px;
+}
+
+#energyBar {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #2ca900, #c6ff00);
+  box-shadow: 0 0 12px #64ff00;
+  transition: width .15s;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 13px;
+}
+
+.stat-value {
+  margin-top: 5px;
+  font-size: 17px;
+  font-weight: bold;
+  color: #e4ffd8;
+}
+
+.stat-unit {
+  font-size: 9px;
+  color: #729b68;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+button {
+  min-height: 40px;
+  border: 1px solid #3b652c;
+  border-radius: 8px;
+  background: #0c1b0d;
+  color: #c9ffb9;
+  font-weight: bold;
+  font-size: 11px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:active {
+  background: #23431a;
+  transform: scale(.98);
+}
+
+button.primary {
+  color: #101b08;
+  background: var(--toxic);
+  border-color: var(--toxic);
+  box-shadow: 0 0 13px #65ff0028;
+}
+
+#hint {
+  position: absolute;
+  z-index: 2;
+  top: 47%;
+  width: 100%;
+  text-align: center;
+  color: #7eaa70;
+  font-size: 10px;
+  letter-spacing: 2px;
+  pointer-events: none;
+  opacity: .8;
+  transition: opacity .5s;
+}
+
+#hint.hidden {
+  opacity: 0;
+}
+
+@media (min-width: 700px) {
+  #hud {
+    left: auto;
+    right: 22px;
+    bottom: 22px;
+    width: 310px;
+  }
+
+  header {
+    left: 24px;
+    right: 24px;
+  }
+}
+
+@media (max-height: 550px) {
+  #hud {
+    padding: 8px;
+    bottom: 7px;
+  }
+
+  .stats {
+    margin-bottom: 7px;
+    gap: 5px;
+  }
+
+  .hud-top {
+    margin-bottom: 6px;
+  }
+
+  button {
+    min-height: 32px;
+  }
+
+  .brand {
+    font-size: 15px;
+  }
+}
+</style>
+</head>
+
+<body>
+<div id="world">
+  <canvas id="scene"></canvas>
+  <div id="vignette"></div>
+
+  <header>
+    <div>
+      <div class="brand">☣ TOXIC SERPENT X</div>
+      <div class="subtitle">BIO-MECHANICAL ENTITY / 001</div>
+    </div>
+    <div class="status">
+      <span class="dot"></span>
+      <span id="statusText">SYSTEM ACTIVE</span>
+    </div>
+  </header>
+
+  <div id="hint">TOUCH & DRAG TO CONTROL</div>
+
+  <section id="hud">
+    <div class="hud-top">
+      <span class="label">TOXIN CORE</span>
+      <span class="value" id="energyText">100%</span>
+    </div>
+    <div class="meter"><div id="energyBar"></div></div>
+
+    <div class="stats" style="margin-top:13px">
+      <div>
+        <div class="label">MOVEMENT SPEED</div>
+        <div class="stat-value"><span id="speedText">0.0</span>
+          <span class="stat-unit">PX/FRAME</span>
+        </div>
+      </div>
+      <div>
+        <div class="label">BODY SEGMENTS</div>
+        <div class="stat-value">48
+          <span class="stat-unit">NODES</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="pauseBtn">Ⅱ PAUSE</button>
+      <button id="speedBtn">SPEED: SLOW</button>
+      <button id="resetBtn" class="primary">↻ RESET</button>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+const canvas = document.getElementById("scene");
+const ctx = canvas.getContext("2d", { alpha: true });
+
+const energyBar = document.getElementById("energyBar");
+const energyText = document.getElementById("energyText");
+const speedText = document.getElementById("speedText");
+const statusText = document.getElementById("statusText");
+const hint = document.getElementById("hint");
+const pauseBtn = document.getElementById("pauseBtn");
+const speedBtn = document.getElementById("speedBtn");
+const resetBtn = document.getElementById("resetBtn");
+
+const SEGMENTS = 48;
+const GREEN = "#8cff00";
+const BRIGHT = "#c4ff54";
+
+let W = 0, H = 0, dpr = 1;
+let lastTime = 0, elapsed = 0;
+let paused = false;
+let dragging = false;
+let pointerId = null;
+let hasDragged = false;
+let speedMode = 0;
+let speedFactor = 0.48;
+let energy = 100;
+
+let spacing = 8;
+let bodyWidth = 5;
+
+const nodes = [];
+const trail = [];
+const particles = [];
+
+let target = { x: 0, y: 0 };
+let headAngle = 0;
+let travelSpeed = 0;
+
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+function resize() {
+  const oldW = W || 1;
+  const oldH = H || 1;
+
+  W = window.innerWidth;
+  H = window.innerHeight;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  canvas.width = Math.round(W * dpr);
+  canvas.height = Math.round(H * dpr);
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  spacing = clamp(Math.min(W, H) * 0.013, 5, 10);
+  bodyWidth = clamp(Math.min(W, H) * 0.009, 3.3, 6.5);
+
+  if (!nodes.length) {
+    resetCreature();
+  } else {
+    const sx = W / oldW;
+    const sy = H / oldH;
+
+    nodes.forEach(n => {
+      n.x *= sx;
+      n.y *= sy;
+    });
+
+    target.x *= sx;
+    target.y *= sy;
+  }
+
+  drawGrid();
+}
+
+window.addEventListener("resize", resize);
+
+function resetCreature() {
+  nodes.length = 0;
+  trail.length = 0;
+  particles.length = 0;
+
+  const x = W * 0.50;
+  const y = H * 0.43;
+
+  for (let i = 0; i < SEGMENTS; i++) {
+    nodes.push({
+      x: x - i * spacing,
+      y,
+      angle: 0
+    });
+  }
+
+  target = { x, y };
+  headAngle = 0;
+  energy = 100;
+  travelSpeed = 0;
+  hasDragged = false;
+  dragging = false;
+  updateHUD();
+}
+
+function drawGrid() {
+  // Grid is rendered every frame for a subtle animated atmosphere.
+}
+
+function pointerPosition(e) {
+  const r = canvas.getBoundingClientRect();
+  return {
+    x: clamp(e.clientX - r.left, 4, W - 4),
+    y: clamp(e.clientY - r.top, 4, H - 4)
+  };
+}
+
+canvas.addEventListener("pointerdown", e => {
+  if (paused) return;
+
+  dragging = true;
+  pointerId = e.pointerId;
+  target = pointerPosition(e);
+  hasDragged = true;
+
+  hint.classList.add("hidden");
+  statusText.textContent = "ENTITY TRACKING";
+
+  try {
+    canvas.setPointerCapture(e.pointerId);
+  } catch (_) {}
+});
+
+canvas.addEventListener("pointermove", e => {
+  if (!dragging || e.pointerId !== pointerId) return;
+  target = pointerPosition(e);
+});
+
+function stopDrag(e) {
+  if (e.pointerId !== pointerId) return;
+  dragging = false;
+  pointerId = null;
+  statusText.textContent = paused ? "SYSTEM PAUSED" : "SYSTEM ACTIVE";
+}
+
+canvas.addEventListener("pointerup", stopDrag);
+canvas.addEventListener("pointercancel", stopDrag);
+canvas.addEventListener("lostpointercapture", () => {
+  dragging = false;
+  pointerId = null;
+});
+
+// Shortest rotation between two angles.
+function angleDiff(a, b) {
+  return Math.atan2(Math.sin(b - a), Math.cos(b - a));
+}
+
+function update(dt) {
+  const h = nodes[0];
+
+  const dx = target.x - h.x;
+  const dy = target.y - h.y;
+  const distance = Math.hypot(dx, dy);
+
+  const desired = distance > 1 ? Math.atan2(dy, dx) : headAngle;
+
+  // Cinematic head rotation.
+  headAngle += angleDiff(headAngle, desired) *
+    (1 - Math.exp(-4.0 * dt));
+
+  const maxStep = speedFactor * 60 * dt;
+  const step = Math.min(maxStep, distance);
+
+  if (!paused && distance > 0.8) {
+    h.x += Math.cos(headAngle) * step;
+    h.y += Math.sin(headAngle) * step;
+  }
+
+  h.x = clamp(h.x, 8, W - 8);
+  h.y = clamp(h.y, 8, H - 8);
+  h.angle = headAngle;
+
+  travelSpeed = dt > 0 ? step / Math.max(dt * 60, 0.001) : 0;
+
+  // Each vertebra follows the position of the previous one.
+  for (let i = 1; i < nodes.length; i++) {
+    const prev = nodes[i - 1];
+    const cur = nodes[i];
+
+    let vx = cur.x - prev.x;
+    let vy = cur.y - prev.y;
+    let dist = Math.hypot(vx, vy) || 1;
+
+    const desiredX = prev.x + vx / dist * spacing;
+    const desiredY = prev.y + vy / dist * spacing;
+
+    const follow = 1 - Math.exp(-15 * dt);
+
+    cur.x += (desiredX - cur.x) * follow;
+    cur.y += (desiredY - cur.y) * follow;
+
+    cur.angle = Math.atan2(prev.y - cur.y, prev.x - cur.x);
+  }
+
+  // Energy trails are emitted from the moving head.
+  if (travelSpeed > 0.08 && Math.random() < 0.65) {
+    particles.push({
+      x: h.x,
+      y: h.y,
+      vx: (Math.random() - 0.5) * 18,
+      vy: (Math.random() - 0.5) * 18,
+      life: 0.5 + Math.random() * 0.65,
+      maxLife: 1.15,
+      size: 1 + Math.random() * 2.5
+    });
+  }
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.life -= dt;
+
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+
+  if (particles.length > 180) {
+    particles.splice(0, particles.length - 180);
+  }
+
+  // Fade the tail and add the latest head position.
+  if (travelSpeed > 0.08) {
+    const last = trail[trail.length - 1];
+    if (!last || Math.hypot(h.x - last.x, h.y - last.y) > 3) {
+      trail.push({ x: h.x, y: h.y, life: 1 });
+    }
+  }
+
+  trail.forEach(p => p.life -= dt * 0.45);
+  while (trail.length && trail[0].life <= 0) trail.shift();
+  if (trail.length > 160) trail.shift();
+
+  // Energy is an aesthetic indicator, not a real resource.
+  if (dragging && distance > 30) {
+    energy = Math.max(35, energy - dt * 2.0);
+  } else {
+    energy = Math.min(100, energy + dt * 1.2);
+  }
+
+  updateHUD();
+}
+
+function updateHUD() {
+  energyBar.style.width = energy.toFixed(1) + "%";
+  energyText.textContent = Math.round(energy) + "%";
+  speedText.textContent = travelSpeed.toFixed(1);
+}
+
+function drawBackground() {
+  ctx.clearRect(0, 0, W, H);
+
+  const gradient = ctx.createRadialGradient(
+    W * 0.5, H * 0.43, 10,
+    W * 0.5, H * 0.43, Math.max(W, H) * 0.8
+  );
+
+  gradient.addColorStop(0, "#0b190a");
+  gradient.addColorStop(0.48, "#040b05");
+  gradient.addColorStop(1, "#010302");
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, W, H);
+
+  const grid = Math.max(28, Math.min(45, W / 12));
+
+  ctx.save();
+  ctx.strokeStyle = "#5aff00";
+  ctx.lineWidth = 0.5;
+  ctx.globalAlpha = 0.095;
+
+  const offset = (elapsed * 2) % grid;
+
+  for (let x = -grid + offset; x < W + grid; x += grid) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, H);
+    ctx.stroke();
+  }
+
+  for (let y = -grid + offset; y < H + grid; y += grid) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(W, y);
+    ctx.stroke();
+  }
+
+  // Subtle bright grid intersections.
+  ctx.globalAlpha = 0.2;
+  for (let x = offset; x < W; x += grid * 3) {
+    for (let y = offset; y < H; y += grid * 3) {
+      ctx.fillStyle = GREEN;
+      ctx.fillRect(x - 1, y - 1, 2, 2);
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawTrail() {
+  ctx.save();
+  ctx.lineCap = "round";
+
+  for (let i = 1; i < trail.length; i++) {
+    const a = trail[i - 1];
+    const b = trail[i];
+
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.strokeStyle = GREEN;
+    ctx.globalAlpha = clamp(Math.min(a.life, b.life) * 0.35, 0, 0.35);
+    ctx.lineWidth = 2 + b.life * 3;
+    ctx.shadowColor = GREEN;
+    ctx.shadowBlur = 12;
+    ctx.stroke();
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.shadowBlur = 0;
+
+  for (const p of particles) {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = BRIGHT;
+    ctx.globalAlpha = clamp(p.life / p.maxLife, 0, 1);
+    ctx.shadowColor = GREEN;
+    ctx.shadowBlur = 10;
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function strokeGlow(pathFn, color, width, glow) {
+  ctx.save();
+  ctx.beginPath();
+  pathFn();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.shadowColor = color;
+  ctx.shadowBlur = glow;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawBody() {
+  const n = nodes.length;
+
+  // Green energy along the spine.
+  strokeGlow(() => {
+    nodes.forEach((p, i) => {
+      if (i === 0) ctx.moveTo(p.x, p.y);
+      else ctx.lineTo(p.x, p.y);
+    });
+  }, GREEN, 2.1, 11);
+
+  // Dark mechanical spine casing.
+  ctx.save();
+  ctx.beginPath();
+  nodes.forEach((p, i) => {
+    if (i === 0) ctx.moveTo(p.x, p.y);
+    else ctx.lineTo(p.x, p.y);
+  });
+  ctx.strokeStyle = "#1d2919";
+  ctx.lineWidth = bodyWidth * 1.25;
+  ctx.stroke();
+  ctx.restore();
+
+  for (let i = 1; i < n - 1; i++) {
+    const p = nodes[i];
+    const prev = nodes[i - 1];
+    const next = nodes[i + 1];
+
+    const angle = Math.atan2(next.y - prev.y, next.x - prev.x);
+    const taper = 0.35 + 0.65 * (1 - i / n);
+    const ribLen = spacing * 1.9 * taper;
+
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(angle);
+
+    // Armored vertebra.
+    ctx.beginPath();
+    ctx.ellipse(0, 0, bodyWidth * 0.8, spacing * 0.65, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "#182317";
+    ctx.fill();
+    ctx.strokeStyle = "#6b9f42";
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+
+    // Two curved ribs.
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(
+        spacing * 0.5, side * ribLen * 0.55,
+        spacing * 0.8, side * ribLen * 0.9,
+        spacing * 0.65, side * ribLen
+      );
+
+      ctx.strokeStyle = "#647b55";
+      ctx.lineWidth = 1.25;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(
+        spacing * 0.65,
+        side * ribLen,
+        1.1,
+        0, Math.PI * 2
+      );
+      ctx.fillStyle = GREEN;
+      ctx.shadowColor = GREEN;
+      ctx.shadowBlur = 6;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    ctx.restore();
+  }
+}
+
+function drawLegs() {
+  for (let i = 3; i < nodes.length - 3; i += 2) {
+    const p = nodes[i];
+    const prev = nodes[i - 1];
+    const next = nodes[i + 1];
+
+    const angle = Math.atan2(next.y - prev.y, next.x - prev.x);
+    const phase = elapsed * 2.4 - i * 0.65;
+    const stride = Math.sin(phase) * spacing * 0.48;
+
+    for (const side of [-1, 1]) {
+      const nx = -Math.sin(angle) * side;
+      const ny = Math.cos(angle) * side;
+
+      const x1 = p.x + nx * bodyWidth * 0.5;
+      const y1 = p.y + ny * bodyWidth * 0.5;
+
+      const x2 = x1 + nx * spacing * 1.05;
+      const y2 = y1 + ny * spacing * 1.05;
+
+      const x3 = x2 + Math.cos(angle) * stride + nx * spacing * 0.35;
+      const y3 = y2 + Math.sin(angle) * stride + ny * spacing * 0.35;
+
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.lineTo(x3, y3);
+
+      ctx.strokeStyle = "#9cae8d";
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(x3, y3, 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = GREEN;
+      ctx.shadowColor = GREEN;
+      ctx.shadowBlur = 5;
+      ctx.fill();
+
+      ctx.restore();
+    }
+  }
+}
+
+function drawHead() {
+  const p = nodes[0];
+
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(headAngle);
+
+  // Skull glow.
+  ctx.shadowColor = GREEN;
+  ctx.shadowBlur = 17;
+
+  ctx.beginPath();
+  ctx.moveTo(bodyWidth * 2.8, 0);
+  ctx.lineTo(bodyWidth * 1.1, -bodyWidth * 1.3);
+  ctx.lineTo(-bodyWidth * 0.9, -bodyWidth * 1.05);
+  ctx.lineTo(-bodyWidth * 1.6, 0);
+  ctx.lineTo(-bodyWidth * 0.9, bodyWidth * 1.05);
+  ctx.lineTo(bodyWidth * 1.1, bodyWidth * 1.3);
+  ctx.closePath();
+
+  ctx.fillStyle = "#182718";
+  ctx.strokeStyle = GREEN;
+  ctx.lineWidth = 1.5;
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.shadowBlur = 0;
+
+  // Eye sockets.
+  for (const side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.ellipse(
+      bodyWidth * 0.65,
+      side * bodyWidth * 0.65,
+      bodyWidth * 0.5,
+      bodyWidth * 0.34,
+      side * 0.2,
+      0, Math.PI * 2
+    );
+
+    ctx.fillStyle = "#030703";
+    ctx.fill();
+
+    // Glowing green eyes.
+    ctx.beginPath();
+    ctx.arc(
+      bodyWidth * 0.73,
+      side * bodyWidth * 0.65,
+      Math.max(1.5, bodyWidth * 0.22),
+      0, Math.PI * 2
+    );
+
+    ctx.fillStyle = "#d7ff9b";
+    ctx.shadowColor = GREEN;
+    ctx.shadowBlur = 12;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  // Jaw line.
+  ctx.beginPath();
+  ctx.moveTo(-bodyWidth * 0.4, -bodyWidth * 0.5);
+  ctx.lineTo(-bodyWidth * 1.25, 0);
+  ctx.lineTo(-bodyWidth * 0.4, bodyWidth * 0.5);
+  ctx.strokeStyle = "#85b76a";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Small toxic tongue.
+  const tongueMotion = Math.sin(elapsed * 1.7) * 1.5;
+  ctx.beginPath();
+  ctx.moveTo(bodyWidth * 2.5, 0);
+  ctx.lineTo(bodyWidth * 3.5 + tongueMotion, 0);
+  ctx.lineTo(bodyWidth * 4 + tongueMotion, -bodyWidth * 0.35);
+  ctx.moveTo(bodyWidth * 3.5 + tongueMotion, 0);
+  ctx.lineTo(bodyWidth * 4 + tongueMotion, bodyWidth * 0.35);
+
+  ctx.strokeStyle = GREEN;
+  ctx.lineWidth = 1.1;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function render() {
+  drawBackground();
+  drawTrail();
+  drawBody();
+  drawLegs();
+  drawHead();
+}
+
+function frame(timestamp) {
+  requestAnimationFrame(frame);
+
+  if (!lastTime) lastTime = timestamp;
+
+  const dt = Math.min((timestamp - lastTime) / 1000, 0.04);
+  lastTime = timestamp;
+
+  if (!paused) {
+    elapsed += dt;
+    update(dt);
+  }
+
+  render();
+}
+
+pauseBtn.addEventListener("click", () => {
+  paused = !paused;
+
+  pauseBtn.textContent = paused ? "▶ RESUME" : "Ⅱ PAUSE";
+  statusText.textContent = paused ? "SYSTEM PAUSED" : "SYSTEM ACTIVE";
+
+  if (paused) {
+    dragging = false;
+    pointerId = null;
+  }
+});
+
+speedBtn.addEventListener("click", () => {
+  speedMode = (speedMode + 1) % 3;
+
+  const modes = [
+    { label: "SPEED: SLOW", factor: 0.48 },
+    { label: "SPEED: NORMAL", factor: 0.85 },
+    { label: "SPEED: FAST", factor: 1.35 }
+  ];
+
+  speedFactor = modes[speedMode].factor;
+  speedBtn.textContent = modes[speedMode].label;
+});
+
+resetBtn.addEventListener("click", () => {
+  resetCreature();
+  hint.classList.remove("hidden");
+  statusText.textContent = "SYSTEM ACTIVE";
+  pauseBtn.textContent = "Ⅱ PAUSE";
+  paused = false;
+});
+
+resize();
+requestAnimationFrame(frame);
+
+})();
+</script>
+</body>
+  </html>
+  
